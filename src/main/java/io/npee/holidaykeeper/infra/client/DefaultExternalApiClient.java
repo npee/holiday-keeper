@@ -43,7 +43,24 @@ public class DefaultExternalApiClient implements ExternalApiClient {
 
     @Override
     public List<ExternalHoliday> fetchHolidays(int year, String countryCode) {
-        return List.of();
+        List<ExternalHoliday> response = callExternalHolidays(year, countryCode);
+        response.forEach(res -> {
+            log.info("res.getName() {}, res.getDate() {}", res.getName(), res.getDate());
+        });
+        return response;
+    }
+
+    private List<ExternalHoliday> callExternalHolidays(int year, String countryCode) {
+        List<ExternalHolidayResponse> response = this.restClient.get()
+                .uri("/PublicHolidays/{year}/{countryCode}", year, countryCode)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        if (response == null) {
+            return List.of();
+        }
+
+        return response.stream().map(ExternalHolidayResponse::toDomain).toList();
     }
 
     @Override

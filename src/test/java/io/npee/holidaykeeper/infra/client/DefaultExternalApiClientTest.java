@@ -22,4 +22,16 @@ class DefaultExternalApiClientTest {
         assertFalse(externalCountries.isEmpty());
     }
 
+    @Test
+    void testFetchHolidays_http_call() {
+        List<ExternalCountry> externalCountries = client.fetchAllCountries();
+        assertFalse(externalCountries.isEmpty());
+
+        ExternalCountry country = externalCountries.getFirst();
+        List.of(2022, 2023, 2024).forEach(year -> {
+            var holidays = client.fetchHolidays(year, country.getCountryCode());
+            assertFalse(holidays.isEmpty());
+        });
+    }
+
 }

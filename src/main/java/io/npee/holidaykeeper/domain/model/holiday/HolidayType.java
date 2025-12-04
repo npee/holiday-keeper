@@ -1,5 +1,6 @@
 package io.npee.holidaykeeper.domain.model.holiday;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -14,4 +15,9 @@ public enum HolidayType {
     OBSERVANCE("기념일");
 
     private final String description;
+
+    @JsonCreator
+    public static HolidayType forValue(String value) {
+        return HolidayType.valueOf(value.toUpperCase());
+    }
 }
