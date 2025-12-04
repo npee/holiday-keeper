@@ -13,10 +13,13 @@ import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 
 @Component
 @Slf4j
@@ -85,15 +88,24 @@ public class DefaultExternalApiClient implements ExternalApiClient {
                 LocalDate.now().getYear() - 4
         );
 
-        List<ExternalHoliday> holidays = new ArrayList<>();
+        List<ExternalHoliday> holidays = Collections.synchronizedList(new ArrayList<>());
 
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+        try (ExecutorService executor = Executors.newFixedThreadPool(
+                32, Thread.ofVirtual().factory())) {
             List<Callable<Void>> tasks = countries.stream()
                     .flatMap(country -> recentFiveYears.stream()
                             .map(year -> (Callable<Void>) () -> {
-                                List<ExternalHoliday> externalHolidays = fetchHolidays(year, country.getCountryCode());
-                                synchronized (holidays) {
+                                try {
+                                    List<ExternalHoliday> externalHolidays =
+                                            fetchHolidays(year, country.getCountryCode());
+
+                                    log.info("Fetched {} holidays for country={}, year={}",
+                                            externalHolidays.size(), country.getCountryCode(), year);
+
                                     holidays.addAll(externalHolidays);
+                                } catch (Exception e) {
+                                    log.error("Failed to fetch holidays for country={}, year={}",
+                                            country.getCountryCode(), year, e);
                                 }
                                 return null;
                             }))
@@ -104,6 +116,23 @@ public class DefaultExternalApiClient implements ExternalApiClient {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Failed to fetch holidays", e);
         }
+
+        log.info("holidays.size() {}", holidays.size());
+
+        holidays.forEach(holiday -> {
+            if (Objects.equals(holiday.getCountryCode(), "US")) {
+                log.info("Fetched Holiday: countryCode={}, date={}, localName={}, name={}, types={}, counties={}, fixed={}, global={}, launchYear={}",
+                        holiday.getCountryCode(),
+                        holiday.getDate(),
+                        holiday.getLocalName(),
+                        holiday.getName(),
+                        holiday.getTypes(),
+                        holiday.getCounties(),
+                        holiday.isFixed(),
+                        holiday.isGlobal(),
+                        holiday.getLaunchYear());
+            }
+        });
 
         return holidays;
     }

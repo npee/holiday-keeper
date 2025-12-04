@@ -17,7 +17,7 @@ public class ExternalHolidayResponse {
     private String localName;
     private String name;
     private List<HolidayType> types;
-    private List<String> countries;
+    private List<String> counties;
     private boolean fixed;
     private boolean global;
     private int launchYear;
@@ -29,7 +29,7 @@ public class ExternalHolidayResponse {
                 .localName(this.localName)
                 .name(this.name)
                 .types(this.types)
-                .countries(this.countries)
+                .counties(this.counties)
                 .fixed(this.fixed)
                 .global(this.global)
                 .launchYear(this.launchYear)

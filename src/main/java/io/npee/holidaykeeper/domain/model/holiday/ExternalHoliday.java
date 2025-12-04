@@ -15,7 +15,7 @@ public class ExternalHoliday {
     private String localName;
     private String name;
     private List<HolidayType> types;
-    private List<String> countries;
+    private List<String> counties;
     private boolean fixed;
     private boolean global;
     private int launchYear;
