@@ -34,4 +34,10 @@ class DefaultExternalApiClientTest {
         });
     }
 
+    @Test
+    void testFetchAllHolidaysForRecentFiveYears_http_call() {
+        var holidays = client.fetchAllHolidaysForRecentFiveYears();
+        assertFalse(holidays.isEmpty());
+    }
+
 }

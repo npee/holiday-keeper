@@ -11,7 +11,12 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Component
 @Slf4j
@@ -28,11 +33,22 @@ public class DefaultExternalApiClient implements ExternalApiClient {
         return callExternalCountries();
     }
 
+    @Override
+    public List<ExternalHoliday> fetchHolidays(int year, String countryCode) {
+        return callExternalHolidays(year, countryCode);
+    }
+
+    @Override
+    public List<ExternalHoliday> fetchAllHolidaysForRecentFiveYears() {
+        return callAllHolidaysForRecentFiveYears();
+    }
+
     private List<ExternalCountry> callExternalCountries() {
         List<ExternalCountryResponse> response = this.restClient.get()
                 .uri("/AvailableCountries")
                 .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
+                .body(new ParameterizedTypeReference<>() {
+                });
 
         if (response == null) {
             return List.of();
@@ -41,20 +57,12 @@ public class DefaultExternalApiClient implements ExternalApiClient {
         return response.stream().map(ExternalCountryResponse::toDomain).toList();
     }
 
-    @Override
-    public List<ExternalHoliday> fetchHolidays(int year, String countryCode) {
-        List<ExternalHoliday> response = callExternalHolidays(year, countryCode);
-        response.forEach(res -> {
-            log.info("res.getName() {}, res.getDate() {}", res.getName(), res.getDate());
-        });
-        return response;
-    }
-
     private List<ExternalHoliday> callExternalHolidays(int year, String countryCode) {
         List<ExternalHolidayResponse> response = this.restClient.get()
                 .uri("/PublicHolidays/{year}/{countryCode}", year, countryCode)
                 .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
+                .body(new ParameterizedTypeReference<>() {
+                });
 
         if (response == null) {
             return List.of();
@@ -63,8 +71,40 @@ public class DefaultExternalApiClient implements ExternalApiClient {
         return response.stream().map(ExternalHolidayResponse::toDomain).toList();
     }
 
-    @Override
-    public List<ExternalHoliday> fetchHolidaysForRecentFiveYears(String countryCode) {
-        return List.of();
+    private List<ExternalHoliday> callAllHolidaysForRecentFiveYears() {
+        List<ExternalCountry> countries = fetchAllCountries();
+        if (countries.isEmpty()) {
+            return List.of();
+        }
+
+        List<Integer> recentFiveYears = List.of(
+                LocalDate.now().getYear(),
+                LocalDate.now().getYear() - 1,
+                LocalDate.now().getYear() - 2,
+                LocalDate.now().getYear() - 3,
+                LocalDate.now().getYear() - 4
+        );
+
+        List<ExternalHoliday> holidays = new ArrayList<>();
+
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Callable<Void>> tasks = countries.stream()
+                    .flatMap(country -> recentFiveYears.stream()
+                            .map(year -> (Callable<Void>) () -> {
+                                List<ExternalHoliday> externalHolidays = fetchHolidays(year, country.getCountryCode());
+                                synchronized (holidays) {
+                                    holidays.addAll(externalHolidays);
+                                }
+                                return null;
+                            }))
+                    .toList();
+
+            executor.invokeAll(tasks);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Failed to fetch holidays", e);
+        }
+
+        return holidays;
     }
 }
