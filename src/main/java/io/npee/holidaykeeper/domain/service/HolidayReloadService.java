@@ -2,7 +2,6 @@ package io.npee.holidaykeeper.domain.service;
 
 import io.npee.holidaykeeper.domain.model.holiday.ExternalHoliday;
 import io.npee.holidaykeeper.domain.model.holiday.Holiday;
-import io.npee.holidaykeeper.domain.model.holiday.HolidayRegion;
 import io.npee.holidaykeeper.domain.model.region.Region;
 import io.npee.holidaykeeper.domain.repository.HolidayRegionRepository;
 import io.npee.holidaykeeper.domain.repository.HolidayRepository;
@@ -12,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -73,48 +71,7 @@ public class HolidayReloadService {
         List<Holiday> holidays = new ArrayList<>();
 
         for (ExternalHoliday extHoliday : fetchHolidays) {
-            Holiday holiday = Holiday.builder()
-                    .date(LocalDate.parse(extHoliday.getDate()))
-                    .localName(extHoliday.getLocalName())
-                    .name(extHoliday.getName())
-                    .countryCode(extHoliday.getCountryCode())
-                    .fixed(extHoliday.isFixed())
-                    .global(extHoliday.isGlobal())
-                    .launchYear(extHoliday.getLaunchYear())
-                    .build();
-
-            if (extHoliday.getTypes() != null && !extHoliday.getTypes().isEmpty()) {
-                holiday.getTypes().addAll(extHoliday.getTypes());
-            }
-
-            List<String> extCounties = extHoliday.getCounties();
-
-            if (extCounties == null || extCounties.isEmpty()) {
-                String isoCode = extHoliday.getCountryCode();
-                Region region = regionByIso.get(isoCode);
-                if (region != null) {
-                    holiday.getHolidayRegions().add(
-                            HolidayRegion.builder()
-                                    .holiday(holiday)
-                                    .region(region)
-                                    .build()
-                    );
-                }
-            } else {
-                for (String isoCode : extCounties) {
-                    Region region = regionByIso.get(isoCode);
-                    if (region != null) {
-                        holiday.getHolidayRegions().add(
-                                HolidayRegion.builder()
-                                        .holiday(holiday)
-                                        .region(region)
-                                        .build()
-                        );
-                    } else {
-                        log.warn("isoCode {}에 해당하는 Region이 존재하지 않습니다.", isoCode);
-                    }
-                }
-            }
+            Holiday holiday = extHoliday.toEntity(regionByIso);
             holidays.add(holiday);
         }
 
