@@ -1,6 +1,6 @@
 package io.npee.holidaykeeper.infra.client.dto;
 
-import io.npee.holidaykeeper.domain.model.country.ExternalCountry;
+import io.npee.holidaykeeper.domain.model.region.ExternalCountry;
 import lombok.Getter;
 import lombok.ToString;
 

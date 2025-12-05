@@ -1,4 +1,4 @@
-package io.npee.holidaykeeper.domain.model.country;
+package io.npee.holidaykeeper.domain.model.region;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

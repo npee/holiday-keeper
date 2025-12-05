@@ -1,7 +1,7 @@
 package io.npee.holidaykeeper.domain.port;
 
 
-import io.npee.holidaykeeper.domain.model.country.ExternalCountry;
+import io.npee.holidaykeeper.domain.model.region.ExternalCountry;
 import io.npee.holidaykeeper.domain.model.holiday.ExternalHoliday;
 
 import java.util.List;
