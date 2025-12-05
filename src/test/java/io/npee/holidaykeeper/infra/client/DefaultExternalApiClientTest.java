@@ -37,11 +37,4 @@ class DefaultExternalApiClientTest {
         });
     }
 
-    @Test
-    @DisplayName("최근 5년간의 모든 국가의 휴일들을 외부 API 통해 조회한다.")
-    void testFetchAllHolidaysForRecentFiveYears_http_call() {
-        var holidays = client.fetchAllHolidaysForRecentFiveYears();
-        assertFalse(holidays.isEmpty());
-    }
-
 }

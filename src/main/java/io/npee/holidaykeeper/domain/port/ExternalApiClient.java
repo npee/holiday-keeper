@@ -11,6 +11,4 @@ public interface ExternalApiClient {
     List<ExternalCountry> fetchAllCountries();
 
     List<ExternalHoliday> fetchHolidays(int year, String countryCode);
-
-    List<ExternalHoliday> fetchAllHolidaysForRecentFiveYears();
 }
