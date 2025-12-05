@@ -23,4 +23,12 @@ public class RegionRepository {
     public Region save(Region region) {
         return regionJpaRepository.save(region);
     }
+
+    public boolean existsByIsoCode(String isoCode) {
+        return regionJpaRepository.existsByIsoCode(isoCode);
+    }
+
+    public long count() {
+        return regionJpaRepository.count();
+    }
 }
