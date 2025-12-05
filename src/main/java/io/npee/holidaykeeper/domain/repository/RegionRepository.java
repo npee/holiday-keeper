@@ -19,4 +19,8 @@ public class RegionRepository {
     public List<Region> saveAll(Iterable<Region> newRegions) {
         return regionJpaRepository.saveAll(newRegions);
     }
+
+    public Region save(Region region) {
+        return regionJpaRepository.save(region);
+    }
 }

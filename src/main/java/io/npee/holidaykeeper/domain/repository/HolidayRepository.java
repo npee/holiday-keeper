@@ -19,4 +19,16 @@ public class HolidayRepository {
     public void deleteAllInBatch() {
         holidayJpaRepository.deleteAllInBatch();
     }
+
+    public Holiday save(Holiday holiday) {
+        return holidayJpaRepository.save(holiday);
+    }
+
+    public List<Holiday> findAll() {
+        return holidayJpaRepository.findAll();
+    }
+
+    public long count() {
+        return holidayJpaRepository.count();
+    }
 }
