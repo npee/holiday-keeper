@@ -1,34 +1,7 @@
 package io.npee.holidaykeeper.domain.repository;
 
 import io.npee.holidaykeeper.domain.model.region.Region;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-
-@Repository
-@RequiredArgsConstructor
-public class RegionRepository {
-
-    private final RegionJpaRepository regionJpaRepository;
-
-    public List<Region> findAll() {
-        return regionJpaRepository.findAll();
-    }
-
-    public List<Region> saveAll(Iterable<Region> newRegions) {
-        return regionJpaRepository.saveAll(newRegions);
-    }
-
-    public Region save(Region region) {
-        return regionJpaRepository.save(region);
-    }
-
-    public boolean existsByIsoCode(String isoCode) {
-        return regionJpaRepository.existsByIsoCode(isoCode);
-    }
-
-    public long count() {
-        return regionJpaRepository.count();
-    }
+public interface RegionRepository extends JpaRepository<Region, Long> {
 }

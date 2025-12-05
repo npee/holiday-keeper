@@ -1,26 +1,7 @@
 package io.npee.holidaykeeper.domain.repository;
 
 import io.npee.holidaykeeper.domain.model.holiday.HolidayRegion;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-
-@Repository
-@RequiredArgsConstructor
-public class HolidayRegionRepository {
-
-    private final HolidayRegionJpaRepository holidayRegionJpaRepository;
-
-    public void deleteAllInBatch() {
-        holidayRegionJpaRepository.deleteAllInBatch();
-    }
-
-    public List<HolidayRegion> findAll() {
-        return holidayRegionJpaRepository.findAll();
-    }
-
-    public long count() {
-        return holidayRegionJpaRepository.count();
-    }
+public interface HolidayRegionRepository extends JpaRepository<HolidayRegion, Long> {
 }
