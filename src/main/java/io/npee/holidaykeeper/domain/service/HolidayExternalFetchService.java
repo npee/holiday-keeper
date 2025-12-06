@@ -85,4 +85,8 @@ public class HolidayExternalFetchService {
 
         return holidays;
     }
+
+    public List<ExternalHoliday> fetchHolidaysBy(int year, String countryCode) {
+        return client.fetchHolidays(year, countryCode);
+    }
 }

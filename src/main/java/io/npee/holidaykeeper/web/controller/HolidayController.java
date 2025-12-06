@@ -1,9 +1,11 @@
 package io.npee.holidaykeeper.web.controller;
 
 import io.npee.holidaykeeper.domain.model.holiday.HolidayType;
+import io.npee.holidaykeeper.domain.service.HolidayMutationService;
 import io.npee.holidaykeeper.domain.service.HolidayQueryService;
 import io.npee.holidaykeeper.web.controller.dto.HolidayResponse;
 import io.npee.holidaykeeper.web.controller.dto.HolidaySearchCondition;
+import io.npee.holidaykeeper.web.controller.dto.HolidayUpsertResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,10 +15,8 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Holiday API", description = "공휴일 조회 API")
 @RestController
@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HolidayController {
 
     private final HolidayQueryService holidayQueryService;
+    private final HolidayMutationService holidayMutationService;
 
     @Operation(
             summary = "공휴일 조회",
@@ -80,4 +81,54 @@ public class HolidayController {
 
         return holidayQueryService.search(condition, pageable);
     }
+
+    @Operation(
+            summary = "공휴일 삭제",
+            description = "특정 연도와 국가 코드에 해당하는 모든 공휴일 데이터를 삭제합니다."
+    )
+    @DeleteMapping
+    public ResponseEntity<Void> deleteHolidays(
+            @Parameter(description = "삭제 대상 연도", example = "2025")
+            @RequestParam Integer year,
+            @Parameter(description = "삭제 대상 국가 코드 (ISO-3166-1, 예: KR, US)", example = "KR")
+            @RequestParam String countryCode
+    ) {
+        if (year == null) {
+            throw new IllegalArgumentException("year는 필수 파라미터입니다.");
+        }
+        if (countryCode == null || countryCode.isBlank()) {
+            throw new IllegalArgumentException("countryCode는 필수 파라미터입니다.");
+        }
+
+        holidayMutationService.deleteByYearAndCountry(year, countryCode);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+            summary = "공휴일 덮어쓰기",
+            description = """
+                    특정 연도와 국가 코드에 해당하는 공휴일 데이터를 외부 API 기준으로 재적재합니다.
+                    1) 해당 연도/국가의 기존 데이터 삭제
+                    2) 외부 API 호출
+                    3) DB insert
+                    """
+    )
+    @PutMapping("/upsert")
+    public ResponseEntity<HolidayUpsertResponse> upsertHolidays(
+            @Parameter(description = "대상 연도", example = "2025")
+            @RequestParam Integer year,
+            @Parameter(description = "대상 국가 코드 (ISO-3166-1, 예: KR, US)", example = "KR")
+            @RequestParam String countryCode
+    ) {
+        if (year == null) {
+            throw new IllegalArgumentException("year는 필수 파라미터입니다.");
+        }
+        if (countryCode == null || countryCode.isBlank()) {
+            throw new IllegalArgumentException("countryCode는 필수 파라미터입니다.");
+        }
+
+        int insertedCount = holidayMutationService.upsertByYearAndCountry(year, countryCode);
+        return ResponseEntity.ok(new HolidayUpsertResponse(insertedCount));
+    }
+
 }
