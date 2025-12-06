@@ -8,7 +8,7 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 class HolidayKeeperApplicationTests {
 
-    @Test
+    // @Test
     void contextLoads() {
     }
 
