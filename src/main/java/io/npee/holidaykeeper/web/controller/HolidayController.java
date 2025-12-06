@@ -22,14 +22,21 @@ public class HolidayController {
 
     @GetMapping
     public Page<HolidayResponse> searchHolidays(
-            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer from,
+            @RequestParam(required = false) Integer to,
             @RequestParam(required = false) String countryCode,
             @RequestParam(required = false) String regionIso,
             @RequestParam(required = false) HolidayType type,
             @PageableDefault Pageable pageable
     ) {
+
+        if (from != null && to != null && from > to) {
+            throw new IllegalArgumentException("from 연도는 to 연도보다 작거나 같아야 합니다.");
+        }
+
         HolidaySearchCondition condition = HolidaySearchCondition.builder()
-                .year(year)
+                .from(from)
+                .to(to)
                 .countryCode(countryCode)
                 .regionIso(regionIso)
                 .type(type)

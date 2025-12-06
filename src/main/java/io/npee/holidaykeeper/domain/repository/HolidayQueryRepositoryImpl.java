@@ -30,7 +30,8 @@ public class HolidayQueryRepositoryImpl implements HolidayQueryRepository {
                 .leftJoin(holiday.holidayRegions, holidayRegion).fetchJoin()
                 .leftJoin(holidayRegion.region, region).fetchJoin()
                 .where(
-                        yearEq(condition.getYear()),
+                        yearGoe(condition.getFrom()),
+                        yearLoe(condition.getTo()),
                         countryEq(condition.getCountryCode()),
                         typeEq(condition.getType()),
                         regionIsoEq(condition.getRegionIso())
@@ -45,7 +46,8 @@ public class HolidayQueryRepositoryImpl implements HolidayQueryRepository {
                 .leftJoin(holiday.holidayRegions, holidayRegion)
                 .leftJoin(holidayRegion.region, region)
                 .where(
-                        yearEq(condition.getYear()),
+                        yearGoe(condition.getFrom()),
+                        yearLoe(condition.getTo()),
                         countryEq(condition.getCountryCode()),
                         typeEq(condition.getType()),
                         regionIsoEq(condition.getRegionIso())
@@ -55,8 +57,12 @@ public class HolidayQueryRepositoryImpl implements HolidayQueryRepository {
         return new PageImpl<>(content, pageable, total != null ? total : 0);
     }
 
-    private BooleanExpression yearEq(Integer year) {
-        return year == null ? null : holiday.date.year().eq(year);
+    private BooleanExpression yearGoe(Integer year) {
+        return year == null ? null : holiday.date.year().goe(year);
+    }
+
+    private BooleanExpression yearLoe(Integer year) {
+        return year == null ? null : holiday.date.year().loe(year);
     }
 
     private BooleanExpression countryEq(String countryCode) {

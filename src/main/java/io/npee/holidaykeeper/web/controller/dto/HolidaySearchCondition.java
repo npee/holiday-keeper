@@ -10,7 +10,9 @@ import lombok.Getter;
 @Builder
 public class HolidaySearchCondition {
 
-    private Integer year;
+    private Integer from;
+
+    private Integer to;
 
     private String countryCode;
 
