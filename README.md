@@ -160,5 +160,15 @@ springdoc-openapi 를 기반으로 자동 생성됩니다.
 ### OpenAPI JSON 문서
 > http://localhost:8080/v3/api-docs
 
+## 🖥 Web UI
+
+### API 테스트용 HTML 페이지
+> http://localhost:8080/holidays
+
+### 📌 기술 스택
+#### Spring MVC + Thymeleaf
+#### Fetch API(JavaScript) 기반 비동기 API 호출
+#### 서버 빌드 태스크(bootRun)에 포함
+
 ---
 

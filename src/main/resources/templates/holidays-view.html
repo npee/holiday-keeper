@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Holiday Admin</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 20px;
+        }
+
+        .section {
+            margin-bottom: 24px;
+        }
+
+        .section h2 {
+            margin-bottom: 8px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f5f5f5;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .controls label {
+            font-size: 14px;
+        }
+
+        .controls input, .controls select {
+            padding: 4px 8px;
+        }
+
+        .btn {
+            padding: 6px 10px;
+            border: 1px solid #999;
+            background: #f0f0f0;
+            cursor: pointer;
+        }
+
+        .btn.primary {
+            background: #2f7de1;
+            color: white;
+            border-color: #2f7de1;
+        }
+
+        .message {
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        .message.error {
+            color: #c00;
+        }
+
+        .message.success {
+            color: #090;
+        }
+    </style>
+</head>
+<body>
+
+<div class="section">
+    <h2>공휴일 조회</h2>
+    <div class="controls">
+        <label>From
+            <input id="fromYear" type="number" min="1900" max="2100" />
+        </label>
+        <label>To
+            <input id="toYear" type="number" min="1900" max="2100" />
+        </label>
+        <label>Country
+            <input id="countryCode" type="text" placeholder="KR, US ..." />
+        </label>
+        <label>Region ISO
+            <input id="regionIso" type="text" placeholder="US-TX ..." />
+        </label>
+        <label>Type
+            <select id="holidayType" name="type">
+                <option value="">(전체)</option>
+
+                <th:block th:each="type : ${T(io.npee.holidaykeeper.domain.model.holiday.HolidayType).values()}">
+                    <option th:value="${type}"
+                            th:text="${type}">
+                    </option>
+                </th:block>
+            </select>
+        </label>
+        <button class="btn primary" onclick="loadHolidays(0)">검색</button>
+    </div>
+    <div id="searchMessage" class="message"></div>
+
+    <table id="holidayTable">
+        <thead>
+        <tr>
+            <th>Date</th>
+            <th>Country</th>
+            <th>Local Name</th>
+            <th>Name</th>
+            <th>Types</th>
+            <th>Regions</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="pagination" class="controls" style="margin-top: 12px;"></div>
+</div>
+
+<div class="section">
+    <h2>연도 / 국가 동기화</h2>
+    <div class="controls">
+        <label>Year
+            <input id="syncYear" type="number" min="1900" max="2100" />
+        </label>
+        <label>Country
+            <input id="syncCountryCode" type="text" placeholder="KR, US ..." />
+        </label>
+        <button class="btn" onclick="deleteHolidays()">해당 연도+국가 삭제</button>
+        <button class="btn primary" onclick="upsertHolidays()">해당 연도+국가 덮어쓰기</button>
+    </div>
+    <div id="syncMessage" class="message"></div>
+</div>
+
+<script>
+    const apiBase = '/api/holidays';
+
+    async function loadHolidays(page) {
+        const from = document.getElementById('fromYear').value;
+        const to = document.getElementById('toYear').value;
+        const countryCode = document.getElementById('countryCode').value;
+        const regionIso = document.getElementById('regionIso').value;
+        const type = document.getElementById('holidayType').value;
+
+        const params = new URLSearchParams();
+        if (from) params.append('from', from);
+        if (to) params.append('to', to);
+        if (countryCode) params.append('countryCode', countryCode);
+        if (regionIso) params.append('regionIso', regionIso);
+        if (type) params.append('type', type);
+        params.append('page', page);
+        params.append('size', '20');
+
+        const messageEl = document.getElementById('searchMessage');
+        messageEl.textContent = '';
+
+        try {
+            const res = await fetch(`${apiBase}?` + params.toString());
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                messageEl.textContent = err.message || '조회 중 오류가 발생했습니다.';
+                messageEl.className = 'message error';
+                return;
+            }
+            const data = await res.json();
+            renderTable(data);
+            renderPagination(data);
+        } catch (e) {
+            messageEl.textContent = '네트워크 오류가 발생했습니다.';
+            messageEl.className = 'message error';
+        }
+    }
+
+    function renderTable(page) {
+        const tbody = document.querySelector('#holidayTable tbody');
+        tbody.innerHTML = '';
+        page.content.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.date}</td>
+                <td>${row.countryCode}</td>
+                <td>${row.localName}</td>
+                <td>${row.name}</td>
+                <td>${(row.types || []).join(', ')}</td>
+                <td>${(row.regionIsoCodes || []).join(', ')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderPagination(page) {
+        const container = document.getElementById('pagination');
+        container.innerHTML = '';
+
+        const current = page.number;
+        const totalPages = page.totalPages;
+
+        if (totalPages <= 1) return;
+
+        if (current > 0) {
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'btn';
+            prevBtn.textContent = '이전';
+            prevBtn.onclick = () => loadHolidays(current - 1);
+            container.appendChild(prevBtn);
+        }
+
+        const info = document.createElement('span');
+        info.textContent = `Page ${current + 1} / ${totalPages}`;
+        container.appendChild(info);
+
+        if (current < totalPages - 1) {
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'btn';
+            nextBtn.textContent = '다음';
+            nextBtn.onclick = () => loadHolidays(current + 1);
+            container.appendChild(nextBtn);
+        }
+    }
+
+    async function deleteHolidays() {
+        const year = document.getElementById('syncYear').value;
+        const countryCode = document.getElementById('syncCountryCode').value;
+        const msg = document.getElementById('syncMessage');
+        msg.textContent = '';
+
+        if (!year || !countryCode) {
+            msg.textContent = 'year와 countryCode를 모두 입력하세요.';
+            msg.className = 'message error';
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({ year, countryCode });
+            const res = await fetch(`${apiBase}?` + params.toString(), {
+                method: 'DELETE'
+            });
+            if (!res.ok && res.status !== 204) {
+                const err = await res.json().catch(() => ({}));
+                msg.textContent = err.message || '삭제 중 오류가 발생했습니다.';
+                msg.className = 'message error';
+                return;
+            }
+            msg.textContent = '삭제가 완료되었습니다.';
+            msg.className = 'message success';
+        } catch (e) {
+            msg.textContent = '네트워크 오류가 발생했습니다.';
+            msg.className = 'message error';
+        }
+    }
+
+    async function upsertHolidays() {
+        const year = document.getElementById('syncYear').value;
+        const countryCode = document.getElementById('syncCountryCode').value;
+        const msg = document.getElementById('syncMessage');
+        msg.textContent = '';
+
+        if (!year || !countryCode) {
+            msg.textContent = 'year와 countryCode를 모두 입력하세요.';
+            msg.className = 'message error';
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams({ year, countryCode });
+            const res = await fetch(`${apiBase}/upsert?` + params.toString(), {
+                method: 'PUT'
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                msg.textContent = err.message || '동기화 중 오류가 발생했습니다.';
+                msg.className = 'message error';
+                return;
+            }
+            const body = await res.json();
+            msg.textContent = `동기화 완료: ${body.upsertedCount}건이 반영되었습니다.`;
+            msg.className = 'message success';
+        } catch (e) {
+            msg.textContent = '네트워크 오류가 발생했습니다.';
+            msg.className = 'message error';
+        }
+    }
+
+    loadHolidays(0);
+</script>
+
+</body>
+</html>
